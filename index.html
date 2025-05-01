@@ -31,12 +31,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const apiKey = "ucoUdythzuslm8pee4YEBAnb3KThmdfW";
-            // Corrigindo URLs conforme a documentação da API
             const baseUrl = "https://api.preparecenter.org/v1";
-            const alertasUrl = `${baseUrl}/org/BRA/alerts/rss`; // Usando código ISO para Brasil
+            const alertasUrl = `${baseUrl}/org/BRA/alerts/rss`;
             const whatNowUrl = `${baseUrl}/org/BRA/whatnow?eventType=earthquake,hurricane`;
 
-            // Cria um painel de status para informações de debug
+            // Cria um painel de status para debug
             const createStatusPanel = () => {
                 const statusPanel = document.createElement('div');
                 statusPanel.className = 'alert alert-info mt-3';
@@ -47,7 +46,6 @@
             };
             
             const statusElement = createStatusPanel();
-
             const logStatus = (message) => {
                 const timestamp = new Date().toLocaleTimeString();
                 statusElement.innerHTML += `[${timestamp}] ${message}\n`;
@@ -58,122 +56,138 @@
                 "x-api-key": apiKey
             };
 
-            // Processamento dos alertas
-            logStatus(`Tentando acessar ${alertasUrl}`);
-            fetch(alertasUrl, { headers })
-                .then(response => {
-                    logStatus(`Resposta para alertasUrl: Status ${response.status} (${response.statusText})`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Status: ${response.status} - ${response.statusText}`);
-                    }
-                    
-                    // Verificando o tipo de conteúdo da resposta
-                    const contentType = response.headers.get('content-type');
-                    logStatus(`Tipo de conteúdo: ${contentType}`);
-                    
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json();
-                    } else if (contentType && contentType.includes('application/xml')) {
-                        // A API pode retornar XML para feeds RSS
-                        logStatus("Resposta em formato XML. Convertendo para texto.");
-                        return response.text().then(text => {
-                            // Para debug, exibimos o conteúdo do XML
-                            logStatus(`Amostra do XML recebido: ${text.substring(0, 200)}...`);
-                            
-                            // Aqui precisaríamos fazer um parsing do XML
-                            // Implementação simplificada apenas para debug
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(text, "text/xml");
-                            
-                            // Adaptando para um formato semelhante ao esperado pelo código existente
-                            const items = xmlDoc.getElementsByTagName('item');
-                            const data = [];
-                            
-                            for (let i = 0; i < items.length; i++) {
-                                const item = items[i];
-                                const title = item.getElementsByTagName('title')[0]?.textContent || '';
-                                const description = item.getElementsByTagName('description')[0]?.textContent || '';
-                                const link = item.getElementsByTagName('link')[0]?.textContent || '';
-                                
-                                data.push({
-                                    translations: [{
-                                        title: title,
-                                        description: description
-                                    }],
-                                    webUrl: link
-                                });
-                            }
-                            
-                            return { data: data };
-                        });
-                    } else {
-                        // Outro formato
-                        logStatus("Resposta em formato desconhecido. Tentando JSON.");
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    logStatus('Dados recebidos com sucesso. Processando alertas...');
-                    
-                    const alertasContainer = document.getElementById('alertas');
-                    if (!data.data || !Array.isArray(data.data)) {
-                        alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">Formato de dados inesperado ou nenhum alerta disponível.</div></div>';
-                        logStatus('Formato de dados inesperado ou nenhum alerta disponível');
-                        return;
-                    }
-                    
-                    if (data.data.length === 0) {
-                        alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-info">Nenhum alerta disponível no momento.</div></div>';
-                        logStatus('Nenhum alerta disponível no momento');
-                        return;
-                    }
-                    
-                    // Resto do código para exibir os alertas
-                    data.data.forEach(alerta => {
-                        // Verificações de segurança para acessar propriedades
-                        if (!alerta.translations || !alerta.translations.length) {
-                            logStatus(`Alerta sem tradução: ${JSON.stringify(alerta)}`);
-                            return;
+            // Flag para simulação
+            const simulateAlerts = true;
+
+            if (simulateAlerts) {
+                logStatus("Simulando resposta para alertas...");
+                // Objeto simulado de alerta
+                const simulatedResponse = {
+                    data: [
+                        {
+                            translations: [
+                                { 
+                                  title: "Alerta de Incêndio", 
+                                  description: "Incêndio de grandes proporções em área florestal. A evacuação de áreas próximas é recomendada." 
+                                }
+                            ],
+                            webUrl: "https://example.com/alerta-incendio"
+                        }
+                    ]
+                };
+
+                processaAlertas(simulatedResponse);
+            } else {
+                // Processamento real dos alertas com fetch
+                logStatus(`Tentando acessar ${alertasUrl}`);
+                fetch(alertasUrl, { headers })
+                    .then(response => {
+                        logStatus(`Resposta para alertasUrl: Status ${response.status} (${response.statusText})`);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Status: ${response.status} - ${response.statusText}`);
                         }
                         
-                        const col = document.createElement('div');
-                        col.className = 'col-md-4';
-
-                        const card = document.createElement('div');
-                        card.className = 'card mb-4';
-
-                        const cardBody = document.createElement('div');
-                        cardBody.className = 'card-body';
-
-                        const title = document.createElement('h5');
-                        title.className = 'card-title';
-                        title.textContent = alerta.translations[0].title || 'Sem título';
-
-                        const description = document.createElement('p');
-                        description.className = 'card-text';
-                        description.textContent = alerta.translations[0].description || 'Sem descrição';
-
-                        const link = document.createElement('a');
-                        link.href = alerta.webUrl || '#';
-                        link.className = 'btn btn-primary';
-                        link.textContent = 'Mais informações';
-
-                        cardBody.appendChild(title);
-                        cardBody.appendChild(description);
-                        cardBody.appendChild(link);
-                        card.appendChild(cardBody);
-                        col.appendChild(card);
-                        alertasContainer.appendChild(col);
+                        const contentType = response.headers.get('content-type');
+                        logStatus(`Tipo de conteúdo: ${contentType}`);
+                        
+                        if (contentType && contentType.includes('application/json')) {
+                            return response.json();
+                        } else if (contentType && contentType.includes('application/xml')) {
+                            logStatus("Resposta em formato XML. Convertendo para texto.");
+                            return response.text().then(text => {
+                                logStatus(`Amostra do XML recebido: ${text.substring(0, 200)}...`);
+                                const parser = new DOMParser();
+                                const xmlDoc = parser.parseFromString(text, "text/xml");
+                                const items = xmlDoc.getElementsByTagName('item');
+                                const data = [];
+                                
+                                for (let i = 0; i < items.length; i++) {
+                                    const item = items[i];
+                                    const title = item.getElementsByTagName('title')[0]?.textContent || '';
+                                    const description = item.getElementsByTagName('description')[0]?.textContent || '';
+                                    const link = item.getElementsByTagName('link')[0]?.textContent || '';
+                                    
+                                    data.push({
+                                        translations: [{
+                                            title: title,
+                                            description: description
+                                        }],
+                                        webUrl: link
+                                    });
+                                }
+                                
+                                return { data: data };
+                            });
+                        } else {
+                            logStatus("Resposta em formato desconhecido. Tentando JSON.");
+                            return response.json();
+                        }
+                    })
+                    .then(data => {
+                        processaAlertas(data);
+                    })
+                    .catch(error => {
+                        logStatus(`Erro ao buscar alertas: ${error.message}`);
+                        document.getElementById('alertas').innerHTML = 
+                            `<div class="col-12"><div class="alert alert-danger">Erro ao carregar alertas: ${error.message}</div></div>`;
                     });
-                })
-                .catch(error => {
-                    logStatus(`Erro ao buscar alertas: ${error.message}`);
-                    document.getElementById('alertas').innerHTML = 
-                        `<div class="col-12"><div class="alert alert-danger">Erro ao carregar alertas: ${error.message}</div></div>`;
-                });
+            }
 
-            // Processamento do whatnow
+            // Função para processar e exibir os alertas
+            function processaAlertas(data) {
+                logStatus('Dados de alertas recebidos. Processando...');
+                const alertasContainer = document.getElementById('alertas');
+                if (!data.data || !Array.isArray(data.data)) {
+                    alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">Formato de dados inesperado ou nenhum alerta disponível.</div></div>';
+                    logStatus('Formato de dados inesperado ou nenhum alerta disponível');
+                    return;
+                }
+                
+                if (data.data.length === 0) {
+                    alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-info">Nenhum alerta disponível no momento.</div></div>';
+                    logStatus('Nenhum alerta disponível no momento');
+                    return;
+                }
+                
+                data.data.forEach(alerta => {
+                    if (!alerta.translations || !alerta.translations.length) {
+                        logStatus(`Alerta sem tradução: ${JSON.stringify(alerta)}`);
+                        return;
+                    }
+                    
+                    const col = document.createElement('div');
+                    col.className = 'col-md-4';
+    
+                    const card = document.createElement('div');
+                    card.className = 'card mb-4';
+    
+                    const cardBody = document.createElement('div');
+                    cardBody.className = 'card-body';
+    
+                    const title = document.createElement('h5');
+                    title.className = 'card-title';
+                    title.textContent = alerta.translations[0].title || 'Sem título';
+    
+                    const description = document.createElement('p');
+                    description.className = 'card-text';
+                    description.textContent = alerta.translations[0].description || 'Sem descrição';
+    
+                    const link = document.createElement('a');
+                    link.href = alerta.webUrl || '#';
+                    link.className = 'btn btn-primary';
+                    link.textContent = 'Mais informações';
+    
+                    cardBody.appendChild(title);
+                    cardBody.appendChild(description);
+                    cardBody.appendChild(link);
+                    card.appendChild(cardBody);
+                    col.appendChild(card);
+                    alertasContainer.appendChild(col);
+                });
+            }
+
+            // Processamento do whatnow (sem alterações)
             logStatus(`Tentando acessar ${whatNowUrl}`);
             fetch(whatNowUrl, { headers })
                 .then(response => {
@@ -184,8 +198,7 @@
                     return response.json();
                 })
                 .then(data => {
-                    logStatus('Dados recebidos com sucesso. Processando whatnow...');
-                    
+                    logStatus('Dados whatnow recebidos. Processando...');
                     const whatNowContainer = document.getElementById('whatnow');
                     if (!data.data || !Array.isArray(data.data)) {
                         whatNowContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">Formato de dados inesperado ou nenhuma informação disponível.</div></div>';
@@ -199,55 +212,53 @@
                         return;
                     }
                     
-                    // Resto do código para exibir as informações whatnow
                     data.data.forEach(item => {
-                        // Verificar se o item tem a estrutura esperada
                         if (!item.translations || !item.translations.en) {
-                            logStatus(`Item sem tradução: ${JSON.stringify(item)}`);
+                            logStatus(`Item whatnow sem tradução: ${JSON.stringify(item)}`);
                             return;
                         }
                         
                         const col = document.createElement('div');
                         col.className = 'col-md-4';
-
+    
                         const card = document.createElement('div');
                         card.className = 'card mb-4';
-
+    
                         const cardBody = document.createElement('div');
                         cardBody.className = 'card-body';
-
+    
                         const title = document.createElement('h5');
                         title.className = 'card-title';
                         title.textContent = item.translations.en.title || 'Sem título';
-
+    
                         const description = document.createElement('p');
                         description.className = 'card-text';
                         description.textContent = item.translations.en.description || 'Sem descrição';
-
+    
                         cardBody.appendChild(title);
                         cardBody.appendChild(description);
-
+    
                         const sections = ['mitigation', 'seasonalForecast', 'warning', 'watch', 'immediate', 'recover'];
                         sections.forEach(section => {
                             if (item.translations.en[section] && item.translations.en[section].length > 0) {
                                 const sectionTitle = document.createElement('h6');
                                 sectionTitle.className = 'card-subtitle mb-2 text-muted';
                                 sectionTitle.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-
+    
                                 const sectionContent = document.createElement('p');
                                 sectionContent.className = 'card-text';
                                 sectionContent.textContent = item.translations.en[section].join(' ');
-
+    
                                 cardBody.appendChild(sectionTitle);
                                 cardBody.appendChild(sectionContent);
                             }
                         });
-
+    
                         const link = document.createElement('a');
                         link.href = item.webUrl || '#';
                         link.className = 'btn btn-primary';
                         link.textContent = 'Mais informações';
-
+    
                         cardBody.appendChild(link);
                         card.appendChild(cardBody);
                         col.appendChild(card);
