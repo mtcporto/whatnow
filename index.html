@@ -3,264 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Alertas API</title>
+    <title>WhatNow - Cruz Vermelha</title>
+    <!-- Preconexão com domínios externos -->
+    <link rel="preconnect" href="https://whatnow.mosaicoworkers.workers.dev">
+    <link rel="preconnect" href="https://maxcdn.bootstrapcdn.com">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <style>
-        .header {
-            background-color: #000;
-            color: #fff;
-            padding: 10px 0;
-        }
-        .content {
-            margin-top: 20px;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Link de acessibilidade para pular para o conteúdo principal -->
+    <a href="#main-content" class="skip-link" tabindex="0">Pular para o conteúdo principal</a>
+
     <div class="container">
-        <div class="header text-center">
-            <h1>Alertas API</h1>
+        <div class="header">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1>WhatNow</h1>
+                    <p class="text-muted">Mensagens da Cruz Vermelha Brasileira</p>
+                </div>
+                <div class="col-md-6 d-flex justify-content-md-end justify-content-start align-items-center">
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Alternar modo escuro/claro">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <div class="form-group mb-0 flex-grow-1">
+                        <select id="event-type-selector" class="form-control" aria-label="Selecionar tipo de evento">
+                            <option value="all">Todos os tipos de evento</option>
+                            <option value="earthquake">Terremoto</option>
+                            <option value="hurricane">Furacão</option>
+                            <option value="drought">Seca</option>
+                            <option value="chemical">Perigo químico</option>
+                            <option value="extreme-heat">Calor extremo</option>
+                            <option value="flood">Enchente</option>
+                            <option value="hail">Chuva de granizo</option>
+                            <option value="landslide">Deslizamento de terra</option>
+                            <option value="pandemic">Pandemia</option>
+                            <option value="tropical-cyclone">Ciclone tropical</option>
+                            <option value="tsunami">Tsunami</option>
+                            <option value="wildfire">Incêndio florestal</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="content">
-            <h2>Alertas</h2>
-            <div id="alertas" class="row"></div>
-            <h2>Gestão de Catástrofes</h2>
-            <div id="whatnow" class="row"></div>
+        
+        <div id="main-content" class="content">
+            <!-- Banner de notificações -->
+            <div id="notifications-banner" class="notifications-banner" style="display:none;">
+                <div class="notifications-text">
+                    <div class="notifications-title">Receba alertas de emergência em tempo real</div>
+                    <div class="notifications-description">Ao ativar as notificações, você será informado sobre novos alertas relevantes para sua região.</div>
+                </div>
+                <button id="enable-notifications" class="btn btn-primary">Ativar Notificações</button>
+            </div>
+            
+            <!-- Navegação entre alertas e whatnow -->
+            <ul class="nav nav-tabs" id="content-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="alerts-tab" data-toggle="tab" href="#alerts" role="tab" aria-controls="alerts" aria-selected="true">
+                        Alertas Ativos <span id="active-alerts-badge" class="badge badge-danger ml-2" style="display: none;">Novo</span>
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="whatnow-tab" data-toggle="tab" href="#whatnow-container" role="tab" aria-controls="whatnow-container" aria-selected="false">O que fazer</a>
+                </li>
+            </ul>
+            
+            <!-- Filtro de região -->
+            <div class="region-filter">
+                <div class="region-filter-title">Filtrar por região:</div>
+                <div class="region-buttons">
+                    <button class="region-button active" data-region="all">Todas as regiões</button>
+                    <button class="region-button" data-region="norte">Norte</button>
+                    <button class="region-button" data-region="nordeste">Nordeste</button>
+                    <button class="region-button" data-region="centro-oeste">Centro-Oeste</button>
+                    <button class="region-button" data-region="sudeste">Sudeste</button>
+                    <button class="region-button" data-region="sul">Sul</button>
+                </div>
+            </div>
+            
+            <!-- Conteúdo das tabs -->
+            <div class="tab-content" id="tab-content">
+                <!-- Tab de alertas ativos -->
+                <div class="tab-pane fade show active" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
+                    <div id="active-alerts-container"></div>
+                </div>
+                
+                <!-- Tab de whatnow -->
+                <div class="tab-pane fade" id="whatnow-container" role="tabpanel" aria-labelledby="whatnow-tab">
+                    <div id="whatnow" class="accordion"></div>
+                </div>
+            </div>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const apiKey = "ucoUdythzuslm8pee4YEBAnb3KThmdfW";
-            // Corrigindo URLs conforme a documentação da API
-            const baseUrl = "https://api.preparecenter.org/v1";
-            const alertasUrl = `${baseUrl}/org/BRA/alerts/rss`; // Usando código ISO para Brasil
-            const whatNowUrl = `${baseUrl}/org/BRA/whatnow?eventType=earthquake,hurricane`;
 
-            // Cria um painel de status para informações de debug
-            const createStatusPanel = () => {
-                const statusPanel = document.createElement('div');
-                statusPanel.className = 'alert alert-info mt-3';
-                statusPanel.id = 'status-panel';
-                statusPanel.innerHTML = '<h4>Status da API</h4><pre id="api-status">Verificando conexão com as APIs...</pre>';
-                document.querySelector('.container').prepend(statusPanel);
-                return document.getElementById('api-status');
-            };
-            
-            const statusElement = createStatusPanel();
+    <!-- Container para toast messages -->
+    <div class="toast-container"></div>
 
-            const logStatus = (message) => {
-                const timestamp = new Date().toLocaleTimeString();
-                statusElement.innerHTML += `[${timestamp}] ${message}\n`;
-                console.log(message);
-            };
-
-            const headers = {
-                "x-api-key": apiKey
-            };
-
-            // Processamento dos alertas
-            logStatus(`Tentando acessar ${alertasUrl}`);
-            fetch(alertasUrl, { headers })
-                .then(response => {
-                    logStatus(`Resposta para alertasUrl: Status ${response.status} (${response.statusText})`);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Status: ${response.status} - ${response.statusText}`);
-                    }
-                    
-                    // Verificando o tipo de conteúdo da resposta
-                    const contentType = response.headers.get('content-type');
-                    logStatus(`Tipo de conteúdo: ${contentType}`);
-                    
-                    if (contentType && contentType.includes('application/json')) {
-                        return response.json();
-                    } else if (contentType && contentType.includes('application/xml')) {
-                        // A API pode retornar XML para feeds RSS
-                        logStatus("Resposta em formato XML. Convertendo para texto.");
-                        return response.text().then(text => {
-                            // Para debug, exibimos o conteúdo do XML
-                            logStatus(`Amostra do XML recebido: ${text.substring(0, 200)}...`);
-                            
-                            // Aqui precisaríamos fazer um parsing do XML
-                            // Implementação simplificada apenas para debug
-                            const parser = new DOMParser();
-                            const xmlDoc = parser.parseFromString(text, "text/xml");
-                            
-                            // Adaptando para um formato semelhante ao esperado pelo código existente
-                            const items = xmlDoc.getElementsByTagName('item');
-                            const data = [];
-                            
-                            for (let i = 0; i < items.length; i++) {
-                                const item = items[i];
-                                const title = item.getElementsByTagName('title')[0]?.textContent || '';
-                                const description = item.getElementsByTagName('description')[0]?.textContent || '';
-                                const link = item.getElementsByTagName('link')[0]?.textContent || '';
-                                
-                                data.push({
-                                    translations: [{
-                                        title: title,
-                                        description: description
-                                    }],
-                                    webUrl: link
-                                });
-                            }
-                            
-                            return { data: data };
-                        });
-                    } else {
-                        // Outro formato
-                        logStatus("Resposta em formato desconhecido. Tentando JSON.");
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    logStatus('Dados recebidos com sucesso. Processando alertas...');
-                    
-                    const alertasContainer = document.getElementById('alertas');
-                    if (!data.data || !Array.isArray(data.data)) {
-                        alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">Formato de dados inesperado ou nenhum alerta disponível.</div></div>';
-                        logStatus('Formato de dados inesperado ou nenhum alerta disponível');
-                        return;
-                    }
-                    
-                    if (data.data.length === 0) {
-                        alertasContainer.innerHTML = '<div class="col-12"><div class="alert alert-info">Nenhum alerta disponível no momento.</div></div>';
-                        logStatus('Nenhum alerta disponível no momento');
-                        return;
-                    }
-                    
-                    // Resto do código para exibir os alertas
-                    data.data.forEach(alerta => {
-                        // Verificações de segurança para acessar propriedades
-                        if (!alerta.translations || !alerta.translations.length) {
-                            logStatus(`Alerta sem tradução: ${JSON.stringify(alerta)}`);
-                            return;
-                        }
-                        
-                        const col = document.createElement('div');
-                        col.className = 'col-md-4';
-
-                        const card = document.createElement('div');
-                        card.className = 'card mb-4';
-
-                        const cardBody = document.createElement('div');
-                        cardBody.className = 'card-body';
-
-                        const title = document.createElement('h5');
-                        title.className = 'card-title';
-                        title.textContent = alerta.translations[0].title || 'Sem título';
-
-                        const description = document.createElement('p');
-                        description.className = 'card-text';
-                        description.textContent = alerta.translations[0].description || 'Sem descrição';
-
-                        const link = document.createElement('a');
-                        link.href = alerta.webUrl || '#';
-                        link.className = 'btn btn-primary';
-                        link.textContent = 'Mais informações';
-
-                        cardBody.appendChild(title);
-                        cardBody.appendChild(description);
-                        cardBody.appendChild(link);
-                        card.appendChild(cardBody);
-                        col.appendChild(card);
-                        alertasContainer.appendChild(col);
-                    });
-                })
-                .catch(error => {
-                    logStatus(`Erro ao buscar alertas: ${error.message}`);
-                    document.getElementById('alertas').innerHTML = 
-                        `<div class="col-12"><div class="alert alert-danger">Erro ao carregar alertas: ${error.message}</div></div>`;
-                });
-
-            // Processamento do whatnow
-            logStatus(`Tentando acessar ${whatNowUrl}`);
-            fetch(whatNowUrl, { headers })
-                .then(response => {
-                    logStatus(`Resposta para whatNowUrl: Status ${response.status} (${response.statusText})`);
-                    if (!response.ok) {
-                        throw new Error(`Status: ${response.status} - ${response.statusText}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    logStatus('Dados recebidos com sucesso. Processando whatnow...');
-                    
-                    const whatNowContainer = document.getElementById('whatnow');
-                    if (!data.data || !Array.isArray(data.data)) {
-                        whatNowContainer.innerHTML = '<div class="col-12"><div class="alert alert-warning">Formato de dados inesperado ou nenhuma informação disponível.</div></div>';
-                        logStatus('Formato de dados inesperado ou nenhuma informação disponível');
-                        return;
-                    }
-                    
-                    if (data.data.length === 0) {
-                        whatNowContainer.innerHTML = '<div class="col-12"><div class="alert alert-info">Nenhuma informação disponível no momento.</div></div>';
-                        logStatus('Nenhuma informação disponível no momento');
-                        return;
-                    }
-                    
-                    // Resto do código para exibir as informações whatnow
-                    data.data.forEach(item => {
-                        // Verificar se o item tem a estrutura esperada
-                        if (!item.translations || !item.translations.en) {
-                            logStatus(`Item sem tradução: ${JSON.stringify(item)}`);
-                            return;
-                        }
-                        
-                        const col = document.createElement('div');
-                        col.className = 'col-md-4';
-
-                        const card = document.createElement('div');
-                        card.className = 'card mb-4';
-
-                        const cardBody = document.createElement('div');
-                        cardBody.className = 'card-body';
-
-                        const title = document.createElement('h5');
-                        title.className = 'card-title';
-                        title.textContent = item.translations.en.title || 'Sem título';
-
-                        const description = document.createElement('p');
-                        description.className = 'card-text';
-                        description.textContent = item.translations.en.description || 'Sem descrição';
-
-                        cardBody.appendChild(title);
-                        cardBody.appendChild(description);
-
-                        const sections = ['mitigation', 'seasonalForecast', 'warning', 'watch', 'immediate', 'recover'];
-                        sections.forEach(section => {
-                            if (item.translations.en[section] && item.translations.en[section].length > 0) {
-                                const sectionTitle = document.createElement('h6');
-                                sectionTitle.className = 'card-subtitle mb-2 text-muted';
-                                sectionTitle.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-
-                                const sectionContent = document.createElement('p');
-                                sectionContent.className = 'card-text';
-                                sectionContent.textContent = item.translations.en[section].join(' ');
-
-                                cardBody.appendChild(sectionTitle);
-                                cardBody.appendChild(sectionContent);
-                            }
-                        });
-
-                        const link = document.createElement('a');
-                        link.href = item.webUrl || '#';
-                        link.className = 'btn btn-primary';
-                        link.textContent = 'Mais informações';
-
-                        cardBody.appendChild(link);
-                        card.appendChild(cardBody);
-                        col.appendChild(card);
-                        whatNowContainer.appendChild(col);
-                    });
-                })
-                .catch(error => {
-                    logStatus(`Erro ao buscar dados whatnow: ${error.message}`);
-                    document.getElementById('whatnow').innerHTML = 
-                        `<div class="col-12"><div class="alert alert-danger">Erro ao carregar informações: ${error.message}</div></div>`;
-                });
-        });
-    </script>
+    <!-- Template para compartilhamento - SIMPLIFICADO -->
+    <template id="share-template">
+        <div class="share-buttons" role="group" aria-label="Botões de compartilhamento">
+            <button class="share-button share-whatsapp" aria-label="Compartilhar no WhatsApp">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="share-button share-copy" aria-label="Copiar link">
+                <i class="fas fa-link"></i> Copiar Link
+            </button>
+        </div>
+    </template>
+    
+    <script src="scripts.js"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
