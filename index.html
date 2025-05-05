@@ -47,16 +47,75 @@
                 </div>
             </div>
         </div>
-        <div class="content">
-            <h2>Alertas</h2>
-            <div id="alertas" class="row"></div>
-            <h2>Gestão de Catástrofes</h2>
-            <div id="whatnow" class="row"></div>
+        
+        <div id="main-content" class="content">
+            <!-- Banner de notificações -->
+            <div id="notifications-banner" class="notifications-banner" style="display:none;">
+                <div class="notifications-text">
+                    <div class="notifications-title">Receba alertas de emergência em tempo real</div>
+                    <div class="notifications-description">Ao ativar as notificações, você será informado sobre novos alertas relevantes para sua região.</div>
+                </div>
+                <button id="enable-notifications" class="btn btn-primary">Ativar Notificações</button>
+            </div>
+            
+            <!-- Navegação entre alertas e whatnow -->
+            <ul class="nav nav-tabs" id="content-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active" id="alerts-tab" data-toggle="tab" href="#alerts" role="tab" aria-controls="alerts" aria-selected="true">
+                        Alertas Ativos <span id="active-alerts-badge" class="badge badge-danger ml-2" style="display: none;">Novo</span>
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link" id="whatnow-tab" data-toggle="tab" href="#whatnow-container" role="tab" aria-controls="whatnow-container" aria-selected="false">O que fazer</a>
+                </li>
+            </ul>
+            
+            <!-- Filtro de região -->
+            <div class="region-filter">
+                <div class="region-filter-title">Filtrar por região:</div>
+                <div class="region-buttons">
+                    <button class="region-button active" data-region="all">Todas as regiões</button>
+                    <button class="region-button" data-region="norte">Norte</button>
+                    <button class="region-button" data-region="nordeste">Nordeste</button>
+                    <button class="region-button" data-region="centro-oeste">Centro-Oeste</button>
+                    <button class="region-button" data-region="sudeste">Sudeste</button>
+                    <button class="region-button" data-region="sul">Sul</button>
+                </div>
+            </div>
+            
+            <!-- Conteúdo das tabs -->
+            <div class="tab-content" id="tab-content">
+                <!-- Tab de alertas ativos -->
+                <div class="tab-pane fade show active" id="alerts" role="tabpanel" aria-labelledby="alerts-tab">
+                    <div id="active-alerts-container"></div>
+                </div>
+                
+                <!-- Tab de whatnow -->
+                <div class="tab-pane fade" id="whatnow-container" role="tabpanel" aria-labelledby="whatnow-tab">
+                    <div id="whatnow" class="accordion"></div>
+                </div>
+            </div>
         </div>
     </div>
-    <script src="scripts.js"></script>
+
+    <!-- Container para toast messages -->
+    <div class="toast-container"></div>
+
+    <!-- Template para compartilhamento - SIMPLIFICADO -->
+    <template id="share-template">
+        <div class="share-buttons" role="group" aria-label="Botões de compartilhamento">
+            <button class="share-button share-whatsapp" aria-label="Compartilhar no WhatsApp">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </button>
+            <button class="share-button share-copy" aria-label="Copiar link">
+                <i class="fas fa-link"></i> Copiar Link
+            </button>
+        </div>
+    </template>
+    
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="scripts.js"></script>
 </body>
 </html>
